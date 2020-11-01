@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration>
+
+<configuration scan="true" scanPeriod="60 seconds" debug="false">
+    <conversionRule conversionWord="m" converterClass="com.zsxneil.logfilter.simple.converter.SensitiveConverter"/>
+
+    <property name="CHARSET" value="UTF-8"/>
+
+    <!-- 日志保存时间7天(yyyyMMddHH表示为小时:7*24H) -->
+    <property name="maxHistory" value="168"/>
+    <property name="maxFileSize" value="200MB"/>
+
+    <!-- 彩色日志 -->
+    <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
+    <conversionRule conversionWord="wex"
+                    converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
+    <conversionRule conversionWord="wEx"
+                    converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter"/>
+
+    <property name="PATTERN"
+              value="|%d{yyyy-MM-dd HH:mm:ss.SSS}|%level|%X{trace_id}| ${PID} -- [%20.20t] - %logger{39}[%line] : - %m%n"/>
+    <property name="CONSOLE_PATTERN"
+              value="${CONSOLE_LOG_PATTERN:-%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} [%-36.36X{trace_id}] %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}[%line]){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"/>
+
+    <!-- ====================================================================================== -->
+    <!-- 控制台日志 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_PATTERN}</pattern>
+            <charset>${CHARSET}</charset> <!-- 此处设置字符集 -->
+        </encoder>
+    </appender>
+
+    <!-- 文件日志 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>../log/simple/info.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <maxHistory>${maxHistory}</maxHistory>
+            <fileNamePattern>../log/simple/info.log.%d{yyyyMMddHH}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${PATTERN}</pattern>
+            <charset>${CHARSET}</charset> <!-- 此处设置字符集 -->
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>256</queueSize>
+        <appender-ref ref="CONSOLE"/>
+        <includeCallerData>true</includeCallerData>
+    </appender>
+
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>256</queueSize>
+        <appender-ref ref="FILE"/>
+        <includeCallerData>true</includeCallerData>
+    </appender>
+
+    <!-- Fix Business Logger Level -->
+    <logger name="simple" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+    </logger>
+
+    <!-- Fix Root Level -->
+    <root level="INFO">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+    </root>
+</configuration>
