@@ -18,6 +18,8 @@ dependencies {
     compile("org.springframework.boot:spring-boot-starter-web")
     compile("org.apache.commons:commons-lang3:${commonsLang3Version}")
 
+    compile("com.alibaba:fastjson:1.2.69")
+
     // test
     testCompile("junit:junit:${junitVersion}")
     testCompile("org.springframework.boot:spring-boot-starter-test")
