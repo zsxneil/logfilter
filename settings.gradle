@@ -1,3 +1,4 @@
 rootProject.name = 'log-filter'
 include 'simple'
+include 'sensitive-log'
 

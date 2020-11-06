@@ -13,6 +13,7 @@ public class TestController {
     @GetMapping("/test")
     public String test() {
         log.info("hello 17328752127");
+        log.debug("hello im debug");
         return "hello";
     }
 
