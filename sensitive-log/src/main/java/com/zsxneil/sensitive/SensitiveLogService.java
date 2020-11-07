@@ -1,10 +1,15 @@
 package com.zsxneil.sensitive;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.classic.spi.LoggerContextListener;
+import ch.qos.logback.classic.spi.TurboFilterList;
+import ch.qos.logback.classic.turbo.TurboFilter;
+import ch.qos.logback.core.status.StatusListener;
 import com.zsxneil.sensitive.converter.JsonSensitiveConverter;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -26,9 +31,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ScheduledFuture;
+import java.util.stream.Collectors;
 
 /**
  * 日志敏感信息处理类
@@ -40,7 +45,7 @@ import java.util.Set;
 @Order(1)
 public class SensitiveLogService implements ApplicationRunner {
 
-    private Logger log = LoggerFactory.getLogger(this.getClass());
+    private org.slf4j.Logger log = LoggerFactory.getLogger(this.getClass());
 
     private SensitiveLogStarterProperties sensitiveLogStarterProperties;
 
@@ -106,17 +111,55 @@ public class SensitiveLogService implements ApplicationRunner {
                 inputStream = new ByteArrayInputStream(((ByteArrayOutputStream) outputStream).toByteArray());
 
                 LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-                JoranConfigurator configurator = new JoranConfigurator();
-                configurator.setContext(context);
-                Map<String, String> copyOfPropertyMap = context.getCopyOfPropertyMap();
 
+                //将原来的属性暂存
+                Map<String, String> copyOfPropertyMap = context.getCopyOfPropertyMap();
+                List<Logger> loggerList = context.getLoggerList();
+                Map<String, Level> loggerLevelMap = loggerList.stream()
+                        .filter(logger -> Objects.nonNull(logger.getLevel()))
+                        .collect(Collectors.toMap(Logger::getName, Logger::getLevel));
+                List<LoggerContextListener> copyOfListenerList = context.getCopyOfListenerList();
+                int maxCallerDataDepth = context.getMaxCallerDataDepth();
+                TurboFilterList turboFilterList = context.getTurboFilterList();
+                List<ScheduledFuture<?>> scheduledFutures = context.getScheduledFutures();
+                List<StatusListener> copyOfStatusListenerList = context.getStatusManager().getCopyOfStatusListenerList();
+
+                //reset context
                 context.reset();
+
                 //将日志文件中配置的属性再put进去
                 Set<String> keySet = copyOfPropertyMap.keySet();
                 for (String key : keySet) {
                     context.putProperty(key, copyOfPropertyMap.get(key));
                 }
+                //将logger的Level设置为原来的
+                for (Logger logger : loggerList) {
+                    if (loggerLevelMap.containsKey(logger.getName())) {
+                        logger.setLevel(loggerLevelMap.get(logger.getName()));
+                    }
+                }
+                //将listener设置回context
+                for (LoggerContextListener listener : copyOfListenerList) {
+                    context.addListener(listener);
+                }
+                //将turboFilter设置回context
+                for (TurboFilter turboFilter : turboFilterList) {
+                    context.addTurboFilter(turboFilter);
+                }
+                //将scheduledFuture设置回context
+                for (ScheduledFuture<?> scheduledFuture : scheduledFutures) {
+                    context.addScheduledFuture(scheduledFuture);
+                }
+                //将statusListener设置回context
+                for (StatusListener statusListener : copyOfStatusListenerList) {
+                    context.getStatusManager().add(statusListener);
+                }
+                //其他属性
+                context.setMaxCallerDataDepth(maxCallerDataDepth);
 
+                //重新加载配置
+                JoranConfigurator configurator = new JoranConfigurator();
+                configurator.setContext(context);
                 configurator.doConfigure(inputStream);
                 log.info("sensitiveLog-starter init finished");
             } catch (Exception e) {

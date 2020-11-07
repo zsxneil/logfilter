@@ -20,6 +20,8 @@ dependencies {
 
     compile("com.alibaba:fastjson:1.2.69")
 
+    implementation("com.zsxneil:sensitive-log:1.0-SNAPSHOT")
+
     // test
     testCompile("junit:junit:${junitVersion}")
     testCompile("org.springframework.boot:spring-boot-starter-test")
