@@ -11,6 +11,7 @@ import com.zsxneil.sensitive.util.FindJsonUtil;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -67,11 +68,19 @@ public class JsonSensitiveConverter extends MessageConverter {
             if (StringUtils.isNotBlank(msgPrefix) && !content.startsWith(msgPrefix)) {
                 return content;
             }
-            List<String> jsonList = FindJsonUtil.format(content);
-
-            for (String line : jsonList) {
-                content = content.replace(line, filterJson(line));
+            List<FindJsonUtil.JsonInfo> jsonList = FindJsonUtil.format(content);
+            if (jsonList != null && jsonList.size() > 0) {
+                //倒序排列，从后往前替换脱敏后的字符串
+                Collections.sort(jsonList, ((o1, o2) -> o2.getStartIndex() - o1.getStartIndex()));
+                for (FindJsonUtil.JsonInfo jsonInfo : jsonList) {
+                    String retJsonString = filterJson(jsonInfo.getJsonString());
+                    content = new StringBuffer(content.substring(0, jsonInfo.getStartIndex()))
+                            .append(retJsonString)
+                            .append(content.substring(jsonInfo.getEndIndex()))
+                            .toString();
+                }
             }
+
         }catch(Exception e) {
         }
         return content;

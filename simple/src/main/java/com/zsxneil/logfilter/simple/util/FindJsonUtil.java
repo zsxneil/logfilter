@@ -1,4 +1,4 @@
-package com.zsxneil.sensitive.util;
+package com.zsxneil.logfilter.simple.util;
 
 import com.alibaba.fastjson.JSON;
 
@@ -123,7 +123,6 @@ public class FindJsonUtil {
         public void setJsonString(String jsonString) {
             this.jsonString = jsonString;
         }
-
     }
 }
 
